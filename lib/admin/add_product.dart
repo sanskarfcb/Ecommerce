@@ -129,7 +129,7 @@ class _AddProductState extends State<AddProduct> {
                 child: ElevatedButton(
                     onPressed: () {},
                     child: Text(
-                      "Add Product",
+                      "Product",
                       style: TextStyle(fontSize: 20),
                     )),
               )
