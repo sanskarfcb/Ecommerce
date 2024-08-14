@@ -1,9 +1,10 @@
 import 'dart:io';
 
+import 'package:ecommerce/services/database.dart';
 import 'package:ecommerce/widget/support_widget.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+//import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:random_string/random_string.dart';
 
@@ -18,19 +19,46 @@ class _AddProductState extends State<AddProduct> {
   final ImagePicker _picker = ImagePicker();
   File? selectedImage;
   TextEditingController namecontroller = new TextEditingController();
+
   Future getImage() async {
     var image = await _picker.pickImage(source: ImageSource.gallery);
-    selectedImage = File(image!.path);
-    setState(() {});
+    if (image != null) {
+      selectedImage = File(image.path);
+      setState(() {});
+    } else {
+      // Handle the case where the user cancels the image selection
+    }
   }
 
-  uploadItem() {
+  uploadItem() async {
     if (selectedImage != null && namecontroller.text != "") {
       String addId = randomAlphaNumeric(10);
       Reference firebaseStoreageRef =
           FirebaseStorage.instance.ref().child("blogImage").child(addId);
 
       final UploadTask task = firebaseStoreageRef.putFile(selectedImage!);
+      var downloadurrl = await (await task).ref.getDownloadURL();
+
+      Map<String, dynamic> addProduct = {
+        "Name": namecontroller,
+        "Image": downloadurrl,
+      };
+      if (value != null) {
+        await Databasemethods().AddProduct(addProduct, value!).then((value) {
+          // Reset form or show a success message
+        });
+      } else {
+        // Handle the case where value is null
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text(
+              "Please select a category",
+              style: TextStyle(fontSize: 20.0),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -59,17 +87,39 @@ class _AddProductState extends State<AddProduct> {
               SizedBox(
                 height: 20.0,
               ),
-              Center(
-                child: Container(
-                  height: 150,
-                  width: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.camera_alt_outlined),
-                ),
-              ),
+              selectedImage == null
+                  ? GestureDetector(
+                      onTap: () {
+                        getImage();
+                      },
+                      child: Center(
+                        child: Container(
+                          height: 150,
+                          width: 150,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey, width: 1.5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.camera_alt_outlined),
+                        ),
+                      ),
+                    )
+                  : Material(
+                      elevation: 4.0,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        height: 150,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Image.file(
+                          selectedImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
               SizedBox(
                 height: 20,
               ),
@@ -127,9 +177,11 @@ class _AddProductState extends State<AddProduct> {
               ),
               Center(
                 child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      uploadItem();
+                    },
                     child: Text(
-                      "Product",
+                      "Add Product",
                       style: TextStyle(fontSize: 20),
                     )),
               )
